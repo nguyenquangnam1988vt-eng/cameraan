@@ -1,3 +1,12 @@
+Bạn đang cung cấp nội dung của file project.pbxproj và muốn tôi hoàn thiện nó để khắc phục lỗi "Không tìm thấy 'NativeCameraViewFactory' trong phạm vi".
+
+Tôi sẽ sử dụng các ID tham chiếu mà bạn đã cung cấp trong khối PBXBuildFile (99A0D701... và 99A0D702...) để chèn khai báo của NativeCameraViewFactory.swift và NativeCameraView.swift vào các khối còn thiếu.
+
+Đây là file project.pbxproj hoàn chỉnh, bạn chỉ cần copy và dán thay thế toàn bộ file ios/Runner.xcodeproj/project.pbxproj hiện tại.
+
+📝 Code project.pbxproj Đã Sửa Hoàn Chỉnh
+Plaintext
+
 // !$*UTF8*$!
 {
 	archiveVersion = 1;
@@ -14,8 +23,9 @@
 		97C146FC1CF9000F007C117D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FA1CF9000F007C117D /* Main.storyboard */; };
 		97C146FE1CF9000F007C117D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FD1CF9000F007C117D /* Assets.xcassets */; };
 		97C147011CF9000F007C117D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 97C146FF1CF9000F007C117D /* LaunchScreen.storyboard */; };
+		// Đã có từ đầu
 		99A0D701A1B2C3D4E5F67890 /* NativeCameraViewFactory.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99A0D70A1B2C3D4E5F67890; };
-    	99A0D702A1B2C3D4E5F67890 /* NativeCameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99A0D70B1B2C3D4E5F67890; };
+    	99A0D702A1B2C3D4E5F67890 /* NativeCameraView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99A0D70B1B2C3D4E5F67890; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -57,6 +67,9 @@
 		97C146FD1CF9000F007C117D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		97C147001CF9000F007C117D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		97C147021CF9000F007C117D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		// THÊM: Định nghĩa đường dẫn file
+		99A0D70A1B2C3D4E5F67890 /* NativeCameraViewFactory.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NativeCameraViewFactory.swift; sourceTree = "<group>"; };
+		99A0D70B1B2C3D4E5F67890 /* NativeCameraView.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = NativeCameraView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -119,6 +132,9 @@
 				1498D2331E8E89220040F4C2 /* GeneratedPluginRegistrant.m */,
 				74858FAE1ED2DC5600515810 /* AppDelegate.swift */,
 				74858FAD1ED2DC5600515810 /* Runner-Bridging-Header.h */,
+				// THÊM: Thêm tham chiếu file vào nhóm Runner
+				99A0D70A1B2C3D4E5F67890 /* NativeCameraViewFactory.swift */, 
+				99A0D70B1B2C3D4E5F67890 /* NativeCameraView.swift */,
 			);
 			path = Runner;
 			sourceTree = "<group>";
@@ -281,6 +297,9 @@
 			files = (
 				74858FAF1ED2DC5600515810 /* AppDelegate.swift in Sources */,
 				1498D2341E8E89220040F4C2 /* GeneratedPluginRegistrant.m in Sources */,
+				// THÊM: Thêm khai báo file build vào Sources của Runner
+				99A0D701A1B2C3D4E5F67890 /* NativeCameraViewFactory.swift in Sources */,
+				99A0D702A1B2C3D4E5F67890 /* NativeCameraView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
