@@ -1,28 +1,9 @@
-Tuyệt vời! Bạn đã cung cấp toàn bộ code Swift. Tôi đã xác định và sửa chữa tất cả các lỗi compiler mà bạn gặp phải trong file NativeCameraView.swift.
-
-Các vấn đề chính là:
-
-Thiếu import CoreMedia: Gây ra lỗi Cannot find type 'CMtime' in scope.
-
-Sử dụng sai Vision API: Cụ thể là faceRequest.uses.detectionTypes = [.face], gây ra lỗi has no member 'uses'. Thuộc tính này không tồn tại trong VNDetectFaceLandmarksRequest.
-
-Lỗi PiP ContentSource: Lớp AVPictureInPictureController.ContentSource không thể nhận AVCaptureVideoPreviewLayer làm sampleBufferDisplayLayer. Bạn cần thay thế AVCaptureVideoPreviewLayer bằng AVSampleBufferDisplayLayer để PiP hoạt động với video output trực tiếp.
-
-Lỗi tương thích iOS 14.2: Thuộc tính canStartPictureInPictureAutomaticallyFromInline cần kiểm tra phiên bản.
-
-Dưới đây là file NativeCameraView.swift đã được sửa chữa và hoàn chỉnh, sẵn sàng để build.
-
-💻 Code Swift Đã Sửa Chữa: NativeCameraView.swift
-Bạn hãy thay thế toàn bộ nội dung file ios/Runner/NativeCameraView.swift bằng code dưới đây.
-
-Swift
-
 import UIKit
 import Flutter
 import AVFoundation
 import AVKit
-import CoreMedia // <--- ĐÃ THÊM: Cần thiết cho các kiểu dữ liệu như CMTime
-import Vision    // <--- ĐÃ THÊM: Cần thiết cho VNDetectFaceLandmarksRequest
+import CoreMedia
+import Vision
 
 class NativeCameraView: NSObject, FlutterPlatformView, AVPictureInPictureControllerDelegate, AVPictureInPictureSampleBufferPlaybackDelegate, AVCaptureVideoDataOutputSampleBufferDelegate, FlutterStreamHandler {
     
@@ -33,7 +14,7 @@ class NativeCameraView: NSObject, FlutterPlatformView, AVPictureInPictureControl
     private var eventSink: FlutterEventSink?
 
     private var captureSession: AVCaptureSession?
-    // Thay thế PreviewLayer bằng SampleBufferDisplayLayer để hỗ trợ PiP
+    // Sử dụng AVSampleBufferDisplayLayer để hỗ trợ PiP
     private var displayLayer: AVSampleBufferDisplayLayer? 
     private var videoDataOutput: AVCaptureVideoDataOutput?
     private var pipController: AVPictureInPictureController?
@@ -84,7 +65,7 @@ class NativeCameraView: NSObject, FlutterPlatformView, AVPictureInPictureControl
     
     private func setupAudioSession() {
         do {
-            // Sử dụng .playAndRecord để cho phép ghi và phát đồng thời (camera và âm thanh nền PiP)
+            // Sử dụng .playAndRecord để cho phép ghi và phát đồng thời
             try AVAudioSession.sharedInstance().setCategory(.playAndRecord, mode: .videoChat, options: [.mixWithOthers, .allowBluetooth])
             try AVAudioSession.sharedInstance().setActive(true)
         } catch {
@@ -102,10 +83,8 @@ class NativeCameraView: NSObject, FlutterPlatformView, AVPictureInPictureControl
             }
         }
         
-        // Tối ưu hoá session preset cho việc xử lý khung hình
         captureSession.sessionPreset = .vga640x480
         
-        // Sử dụng camera trước
         guard let camera = AVCaptureDevice.default(.builtInWideAngleCamera, for: .video, position: .front) else { return }
         
         do {
@@ -117,14 +96,13 @@ class NativeCameraView: NSObject, FlutterPlatformView, AVPictureInPictureControl
         }
 
         videoDataOutput = AVCaptureVideoDataOutput()
-        // Đảm bảo xử lý trên một queue riêng để không làm tắc UI
         videoDataOutput!.setSampleBufferDelegate(self, queue: DispatchQueue(label: "videoQueue"))
-        // Định dạng kCVPixelFormatType_420YpCbCr8BiPlanarFullRange là tốt nhất cho Vision
+        // Định dạng tốt nhất cho Vision
         videoDataOutput!.videoSettings = [kCVPixelBufferPixelFormatTypeKey as String: kCVPixelFormatType_420YpCbCr8BiPlanarFullRange] 
 
         if captureSession.canAddOutput(videoDataOutput!) { captureSession.addOutput(videoDataOutput!) }
         
-        // Khởi tạo AVSampleBufferDisplayLayer để hiển thị (thay thế AVCaptureVideoPreviewLayer)
+        // Khởi tạo AVSampleBufferDisplayLayer để hiển thị
         displayLayer = AVSampleBufferDisplayLayer()
         guard let displayLayer = displayLayer else { return }
         
@@ -132,7 +110,6 @@ class NativeCameraView: NSObject, FlutterPlatformView, AVPictureInPictureControl
         displayLayer.videoGravity = .resizeAspectFill
         _view.layer.addSublayer(displayLayer)
 
-        // Thiết lập orientation nếu cần (Ví dụ: portrait)
         if let videoConnection = videoDataOutput!.connection(with: .video), videoConnection.isVideoOrientationSupported {
             videoConnection.videoOrientation = .portrait
         }
@@ -147,19 +124,18 @@ class NativeCameraView: NSObject, FlutterPlatformView, AVPictureInPictureControl
 
         guard let displayLayer = displayLayer else { return }
 
-        // FIX LỖI: ContentSource phải nhận AVSampleBufferDisplayLayer
+        // ContentSource phải nhận AVSampleBufferDisplayLayer
         let contentSource = AVPictureInPictureController.ContentSource(sampleBufferDisplayLayer: displayLayer)
         
-        // FIX LỖI: Thêm delegate và playbackDelegate (chính là self)
         pipController = AVPictureInPictureController(contentSource: contentSource)
         pipController?.delegate = self
-        // FIX LỖI: Bọc kiểm tra phiên bản iOS 14.2+
+        // Kiểm tra phiên bản iOS 14.2+
         if #available(iOS 14.2, *) {
             pipController?.canStartPictureInPictureAutomaticallyFromInline = true
         }
         
-        // AVPictureInPictureController cần một playbackDelegate để hoạt động
-        pipController?.setSampleBufferDelegate(self) 
+        // **ĐÃ XÓA:** pipController?.setSampleBufferDelegate(self) (Hàm này không tồn tại)
+        // PiP sẽ tự động sử dụng delegate (self) để gọi các hàm AVPictureInPictureSampleBufferPlaybackDelegate.
     }
     
     private func startPip() {
@@ -174,37 +150,29 @@ class NativeCameraView: NSObject, FlutterPlatformView, AVPictureInPictureControl
     
     func captureOutput(_ output: AVCaptureOutput, didOutput sampleBuffer: CMSampleBuffer, from connection: AVCaptureConnection) {
         
-        // 1. Hiển thị khung hình lên AVSampleBufferDisplayLayer
+        // 1. Hiển thị khung hình lên AVSampleBufferDisplayLayer (Phải chạy trên Main Thread)
         DispatchQueue.main.async {
             if self.displayLayer?.isReadyForMoreMediaData == true {
                 self.displayLayer?.enqueue(sampleBuffer)
             }
         }
         
-        // 2. Xử lý Vision (Chỉ khi PiP đang hoạt động hoặc bạn muốn xử lý mọi lúc)
+        // 2. Xử lý Vision
         if self.pipController?.isPictureInPictureActive != true {
-             // Chỉ xử lý Vision khi PiP đang bật. Bỏ comment dòng dưới nếu muốn xử lý mọi lúc.
+             // Chỉ xử lý Vision khi PiP đang bật
              return
         }
 
-        // 3. Tạo CVPixelBuffer từ sampleBuffer
         guard let pixelBuffer = CMSampleBufferGetImageBuffer(sampleBuffer) else { return }
         
-        // 4. Tạo Vision Request: Phát hiện khuôn mặt và các mốc
         let faceRequest = VNDetectFaceLandmarksRequest { [weak self] request, error in
             guard let observations = request.results as? [VNFaceObservation],
                   let self = self else { return }
             
-            // Xử lý kết quả nhận diện
             self.handleFaceObservations(observations)
         }
         
-        // FIX LỖI: VNDetectFaceLandmarksRequest không có member 'uses'. 
-        // Thay vào đó, sử dụng thuộc tính chung như revision hoặc preferredImageSize. 
-        // (Hoặc đơn giản là bỏ qua vì mặc định nó đã phát hiện khuôn mặt)
-        // Ví dụ: faceRequest.revision = VNDetectFaceLandmarksRequestRevision3
-        
-        // 5. Thực hiện Request
+        // 3. Thực hiện Request
         do {
             try sequenceHandler.perform([faceRequest], on: pixelBuffer)
         } catch {
@@ -220,15 +188,9 @@ class NativeCameraView: NSObject, FlutterPlatformView, AVPictureInPictureControl
         if observations.isEmpty {
             status = "KHÔNG PHÁT HIỆN KHUÔN MẶT"
         } else {
-            // Lấy khuôn mặt đầu tiên
             let face = observations.first!
             
-            // Vision có thể cung cấp Euler Angles (góc Yaw, Pitch, Roll)
-            // Lấy góc Yaw (quay đầu sang trái/phải). Roll là góc nghiêng.
-            // Phải lấy từ attibute của VNFaceObservation.
-            
-            // Kiểm tra xem góc Roll (xoay quanh trục Z) có hợp lệ không
-            // Roll: góc nghiêng của đầu (tai lên/xuống)
+            // Kiểm tra góc Roll (xoay quanh trục Z)
             if let roll = face.roll, abs(roll.doubleValue) < 0.25 { 
                  status = "✅ ĐANG NHÌN ĐIỆN THOẠI"
             } else {
@@ -236,7 +198,6 @@ class NativeCameraView: NSObject, FlutterPlatformView, AVPictureInPictureControl
             }
         }
         
-        // Gửi kết quả về Flutter
         let timestamp = Date().timeIntervalSince1970
         let result: [String: Any] = ["time": timestamp, "status": status]
         
@@ -258,30 +219,28 @@ class NativeCameraView: NSObject, FlutterPlatformView, AVPictureInPictureControl
         return nil
     }
     
-    // MARK: - AVPictureInPictureControllerDelegate (Để theo dõi trạng thái PiP)
+    // MARK: - AVPictureInPictureControllerDelegate
     
     func pictureInPictureControllerWillStartPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
-        // Có thể ẩn giao diện camera cục bộ khi PiP bắt đầu
         DispatchQueue.main.async {
             self._view.isHidden = true
         }
     }
     
     func pictureInPictureControllerDidStopPictureInPicture(_ pictureInPictureController: AVPictureInPictureController) {
-        // Hiện lại giao diện camera cục bộ khi PiP kết thúc
         DispatchQueue.main.async {
             self._view.isHidden = false
         }
     }
     
-    // MARK: - AVPictureInPictureSampleBufferPlaybackDelegate (Để chạy PiP)
+    // MARK: - AVPictureInPictureSampleBufferPlaybackDelegate
     
-    // FIX LỖI: Sửa lỗi cú pháp CMTime (dòng 220 trong code cũ của bạn)
     func pictureInPictureController(_ pictureInPictureController: AVPictureInPictureController, setPlaying playing: Bool) {
-        // Xử lý PiP play/pause (không cần thiết cho luồng camera liên tục)
+        // Xử lý PiP play/pause (Không cần thay đổi gì cho luồng camera liên tục)
     }
 
     func pictureInPictureControllerTimeRangeForPlayback(_ pictureInPictureController: AVPictureInPictureController) -> CMTimeRange {
+        // Phạm vi thời gian vô hạn cho luồng camera liên tục
         return CMTimeRange(start: .negativeInfinity, duration: .positiveInfinity)
     }
 
