@@ -124,17 +124,23 @@ class NativeCameraView: NSObject, FlutterPlatformView, AVPictureInPictureControl
 
         guard let displayLayer = displayLayer else { return }
 
-        // FIX LỖI: Sử dụng ContentSource initializer đúng, truyền cả layer và delegate
-        let contentSource = AVPictureInPictureController.ContentSource(sampleBufferDisplayLayer: displayLayer, playbackDelegate: self)
-        
-        // Tạo PiP Controller với ContentSource
-        pipController = AVPictureInPictureController(contentSource: contentSource)
-        
-        pipController?.delegate = self
-        
-        // Kiểm tra phiên bản iOS 14.2+
-        if #available(iOS 14.2, *) {
-            pipController?.canStartPictureInPictureAutomaticallyFromInline = true
+        // FIX LỖI: Chỉ sử dụng API iOS 15.0+ nếu phiên bản hiện tại hỗ trợ
+        if #available(iOS 15.0, *) {
+            let contentSource = AVPictureInPictureController.ContentSource(sampleBufferDisplayLayer: displayLayer, playbackDelegate: self)
+            
+            pipController = AVPictureInPictureController(contentSource: contentSource)
+            
+            pipController?.delegate = self
+            
+            // Kiểm tra phiên bản iOS 14.2+ (bọc bên ngoài if iOS 15.0)
+            if #available(iOS 14.2, *) {
+                pipController?.canStartPictureInPictureAutomaticallyFromInline = true
+            }
+        } else {
+             // Trên iOS < 15.0, PiP với AVSampleBufferDisplayLayer KHÔNG được hỗ trợ dễ dàng
+             // Nếu bạn muốn hỗ trợ PiP trên iOS < 15.0, bạn cần sử dụng AVPlayer/AVURLAsset.
+             // Chúng ta sẽ bỏ qua PiP nếu phiên bản không đủ, hoặc bạn cần nâng target iOS.
+            print("PiP với Camera Sample Buffer không được hỗ trợ trên iOS < 15.0")
         }
     }
     
@@ -142,7 +148,7 @@ class NativeCameraView: NSObject, FlutterPlatformView, AVPictureInPictureControl
         if let pipController = pipController, pipController.isPictureInPicturePossible {
             pipController.startPictureInPicture()
         } else {
-            print("Không thể bắt đầu PiP. Kiểm tra lại cài đặt.")
+            print("Không thể bắt đầu PiP. Kiểm tra lại cài đặt hoặc phiên bản iOS.")
         }
     }
     
