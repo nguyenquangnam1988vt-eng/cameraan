@@ -124,18 +124,15 @@ class NativeCameraView: NSObject, FlutterPlatformView, AVPictureInPictureControl
 
         guard let displayLayer = displayLayer else { return }
 
-        // ContentSource phải nhận AVSampleBufferDisplayLayer
-        let contentSource = AVPictureInPictureController.ContentSource(sampleBufferDisplayLayer: displayLayer)
+        // FIX LỖI: Sử dụng initializer chính xác, cung cấp layer VÀ playbackDelegate
+        pipController = AVPictureInPictureController(sampleBufferDisplayLayer: displayLayer, playbackDelegate: self)
         
-        pipController = AVPictureInPictureController(contentSource: contentSource)
         pipController?.delegate = self
+        
         // Kiểm tra phiên bản iOS 14.2+
         if #available(iOS 14.2, *) {
             pipController?.canStartPictureInPictureAutomaticallyFromInline = true
         }
-        
-        // **ĐÃ XÓA:** pipController?.setSampleBufferDelegate(self) (Hàm này không tồn tại)
-        // PiP sẽ tự động sử dụng delegate (self) để gọi các hàm AVPictureInPictureSampleBufferPlaybackDelegate.
     }
     
     private func startPip() {
